@@ -1,37 +1,37 @@
+
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 
-//Auth From Firebase
+//Auth functions
 import {
     getAuth,
-    signInWithPopup,
     signInWithRedirect,
-    GoogleAuthProvider
-} from 'firebase/auth'
+    signInWithPopup,
+    GoogleAuthProvider,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword
+} from "firebase/auth";
 
-//DB Setup
+//DB functions
 import {
-    getFirestore,
     doc,
     getDoc,
     setDoc,
-} from 'firebase/firestore';
-
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+    getFirestore
+} from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAqx4tjBMOccVAwN6gbnH91ZHLl6SnFjsw",
-  authDomain: "ecommerce-clothing-db-ca128.firebaseapp.com",
-  projectId: "ecommerce-clothing-db-ca128",
-  storageBucket: "ecommerce-clothing-db-ca128.appspot.com",
-  messagingSenderId: "850637467269",
-  appId: "1:850637467269:web:c1aed447984636864583ec"
+  apiKey: "AIzaSyDm5Z9xwOmA16m85Wv4AFYsH8q8hUx0bQ8",
+  authDomain: "e-commerce-db-4f284.firebaseapp.com",
+  projectId: "e-commerce-db-4f284",
+  storageBucket: "e-commerce-db-4f284.appspot.com",
+  messagingSenderId: "639927537406",
+  appId: "1:639927537406:web:dd5d1b22cf916486985faf"
 };
 
 // Initialize Firebase
-const firebaseApp = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 const provider = new GoogleAuthProvider();
 
@@ -39,40 +39,67 @@ provider.setCustomParameters({
     prompt: "select_account"
 });
 
+//Auth Setup
 export const auth = getAuth();
 export const signInWithGooglePopup = () => signInWithPopup(auth, provider);
-export const signInWithGoogleRedirect = () => signInWithRedirect(auth, provider);
+export const signInWithGoogleRedirect = () =>  signInWithRedirect(auth, provider);
 
+export const createAuthUserUsingEmailAndPassword = async (email, password) => {
+
+    if(!email || !password){
+        alert("Email and Password not provided");
+        return;
+    }
+
+    return await createUserWithEmailAndPassword(auth, email, password);
+
+}
+
+export const signInUserUsingEmailAndPassword = async (email, password) => {
+
+    if(!email || !password){
+        alert("Email and Password not provided");
+        return;
+    }
+
+    return await signInWithEmailAndPassword(auth, email, password);
+
+}
+
+//DB Setup
 export const db = getFirestore();
-export const createUserDocumentFromAuth = async (userAuthData) => {
-    
-    //Getting the unique reference to check whether user exists in users collection using uid. 
-    let userDocument = await doc(db, 'users', userAuthData.uid);
 
-    //Now, since we have reference, we can use reference to get the relavant record from document
-    let userSnapShot = await getDoc(userDocument);
+export const createUserFromAuth = async (userAuthData, additionalData = {}) => {
 
-    //If user doesn't exist then create one
-    if(!userSnapShot.exists()){
+    if(!userAuthData) return;
+
+    //Get the document structure of Auth user.
+    let userDocumentRef = await doc(db,'users', userAuthData.uid);
+
+    //Once we have user document, now search for exact user
+    let searchUser = await getDoc(userDocumentRef);
+
+
+    if(!searchUser.exists()){
 
         let { displayName, email } = userAuthData;
         let createdAt = new Date();
 
         try{
 
-            let createUser = await setDoc(userDocument, {
+            await setDoc(userDocumentRef, {
                 displayName,
                 email,
-                createdAt
+                createdAt,
+                ...additionalData
             });
 
-            return createUser;
-
         }catch(error){
-            console.log("Error while creating User ", error);
-        }
-        
-    }
 
-    return userSnapShot;
+            console.log("Error while creating user from Auth Data ", error);
+        }
+    }
 }
+
+
+
